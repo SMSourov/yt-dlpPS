@@ -11,3 +11,4 @@ That folder, keep `ffmpeg.exe` and `ffprobe.exe`
 This should work on both Windows and Linux without any problem
 
 The C programs can be compiled easily.
+In order to make the process easier, the binaries for Windows OS `yt-dlp.windows.exe` and Linux OS `yt-dlp.linux` are given to avoid compilation problems and make the process easier.
