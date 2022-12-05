@@ -20,3 +20,4 @@ In order to use this program, make sure that you have the dependencies installed
   - [Python](https://www.python.org/downloads/) 3.x or later (`yt-dlp` needs python runtime environment to work. It won't work without it.)
   - [SubtitleEdit](https://github.com/SubtitleEdit/subtitleedit/releases) (For editing subtitles. You can make changes in the subtitle with it.)
   - [MKVToolNix](https://www.fosshub.com/MKVToolNix.html) (For putting the subtitles, changing the subtitle title, setting the default subtitle etc.)
+  - Static full builds of [FFmpeg](https://www.gyan.dev/ffmpeg/builds/)
