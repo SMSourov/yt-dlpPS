@@ -4,6 +4,8 @@ This repo contains the PowerShell file that I use to download an YouTube video w
 Powershell v7, FFmpeg, Ffprobe is needed to use this.
 
 
-Put `yt-dlp.exe` in the folder where you will run this script and make a folder named
+Put `yt-dlp` in the folder where you will run this script and make a folder named
 `bin`
 That folder, keep `ffmpeg.exe` and `ffprobe.exe`
+
+This should work on both Windows and Linux without any problem
