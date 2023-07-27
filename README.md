@@ -16,8 +16,6 @@ In order to use this program, make sure that you have the dependencies installed
     
 For Windows OS:
   - [Python](https://www.python.org/downloads/) 3.x or later (`yt-dlp` needs python runtime environment to work. It won't work without it.)
-  - [SubtitleEdit](https://github.com/SubtitleEdit/subtitleedit/releases) (For editing subtitles. You can make changes in the subtitle with it.)
-  - [MKVToolNix](https://www.fosshub.com/MKVToolNix.html) (For putting the subtitles, changing the subtitle title, setting the default subtitle etc.)
   - Static full builds of [FFmpeg](https://www.gyan.dev/ffmpeg/builds/)
 Add mkvtoolnix-gui, SubtitleEdit.exe in the environment variables.
 
@@ -27,6 +25,5 @@ For Linux OS:
   - python3-is-python (In the powershell file, `python` command is used. But in `python3` package, you have to use `python3` command. this package solves that problem.
   - wine
   - ffmpeg
-  - mkvtoolnix-gui
 
-You may have to change the command by your self. You only have to copy and paste the location in the powershell file. Nothing more.
+You may have to change the command by yourself. You only have to copy and paste the location in the powershell file. Nothing more.
