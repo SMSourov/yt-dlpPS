@@ -23,7 +23,6 @@ Add mkvtoolnix-gui, SubtitleEdit.exe in the environment variables.
 For Linux OS:
   - python3 (`yt-dlp` needs python runtime environment to work. It won't work without it.)
   - python3-is-python (In the powershell file, `python` command is used. But in `python3` package, you have to use `python3` command. this package solves that problem.
-  - wine
   - ffmpeg
 
 You may have to change the command by yourself. You only have to copy and paste the location in the powershell file. Nothing more.
