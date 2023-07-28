@@ -3,6 +3,7 @@
 This repo contains the PowerShell file that I use to download an YouTube video with the help of [yt-dlp](https://github.com/yt-dlp/yt-dlp). It makes everything easier for me. I don't have to type everything everytime.
 Powershell v7, FFmpeg, FFprobe is needed to use this.
 
+### Keep in mind, this is optimized for the selected resolutions up to 4k. You shouldn't have any problems downloading videos up to 4k. For 8k, you have to manually configure some options. The selected default resolution is 1920x1080.
 
 Put `yt-dlp` in the folder where you will run this script and make a folder named
 `bin`
