@@ -1,8 +1,60 @@
+function Get-VideoFormats {
+    param(
+        [Parameter(Mandatory=$true)]
+        $myJson,
+
+        [Parameter(Mandatory=$true)]
+        $width,
+
+        [Parameter(Mandatory=$true)]
+        $vcodec,
+
+        [Parameter(Mandatory=$true)]
+        $protocol
+    )
+
+    $formats = $myJson.formats | Where-Object { 
+        $_.width -eq $width -and 
+        $_.vcodec -like "*$vcodec*" -and 
+        $_.protocol -like "*$protocol*" 
+    }
+
+    # Instead of returning just the format IDs, return the entire format objects
+    return $formats
+}
+
+
+function Get-AudioFormats {
+    param(
+        [Parameter(Mandatory=$true)]
+        $myJson,
+
+        [Parameter(Mandatory=$true)]
+        $format_note,
+
+        [Parameter(Mandatory=$true)]
+        $acodec
+    )
+
+    $formats = $myJson.formats | Where-Object { 
+        $_.format_note -eq "$format_note" -and 
+        $_.acodec -like "*$acodec*" 
+    }
+
+    # Instead of returning just the format IDs, return the entire format objects
+    return $formats
+}
+
+
+# First block, take the url and get the temp file.
 $YouTube_URL = Read-Host "Enter your YouTube video URL"
 
 # Get the info. The info file will be temporarily saved as "temp.info.json"
 py .\yt-dlp\ $YouTube_URL --write-info-json --skip-download --windows-filenames -o temp
 
+
+
+# Second block, set the config
 # In order to download a video, make sure that the height/width has one of the given values:
 # 4320
 # 2160
@@ -44,96 +96,88 @@ $audioFound = 0
 # $optionalCommands = " -N 8 --windows-filenames --write-thumbnail --convert-thumbnails jpg --embed-thumbnail --embed-metadata --embed-chapters --ffmpeg-location bin/"
 
 
-# Download the subtitles
-py .\yt-dlp\ "$YouTube_URL" --ffmpeg-location bin/ --write-subs --sub-langs all --convert-subs ass --skip-download
-py .\yt-dlp\ "$YouTube_URL" --ffmpeg-location bin/ --write-subs --sub-langs all --convert-subs srt --skip-download
+
+# Third block, download the subtitles
+# Third block, download the subtitles in both ASS and SRT formats
+$subtitleFormats = @("ass", "srt")
+foreach ($format in $subtitleFormats) {
+    py .\yt-dlp\ "$YouTube_URL" --ffmpeg-location bin/ --write-subs --sub-langs all --convert-subs $format --skip-download
+}
 
 
+
+# Fourth block, read the temp file
 # Read the JSON file and convert it to a PowerShell object
 $myJson = Get-Content -Raw temp.info.json | ConvertFrom-Json
 
+
+
+# Fifth block, start filtering for the video
 # Filter the formats array based on the variables
-$formats = $myJson.formats | Where-Object { 
-    $_.width -eq $width -and 
-    # $_.height -eq $height -and 
-    $_.vcodec -like "*$vcodec*" -and 
-    $_.protocol -like "*$protocol*" 
-}
-# Extract the format_id values and store them in an array variable
-$formatIds = $formats | Select-Object -ExpandProperty format_id
+$formats = Get-VideoFormats -myJson $myJson -width $width -vcodec $vcodec -protocol $protocol
 
-# Check how many id $formatIds have. Only 1 is acceptable.
-$count = $formatIds.Count
-if ( $count -eq 1 ) {
-    $vidID = $formatIds.ToString()
-    $videoFound++
-    Write-Output "The video id is $vidID"
+if ($formats.Count -eq 1) {
+    $selectedFormat = $formats[0]
+    $vidID = $selectedFormat.format_id
+    Write-Output "The video format selected: $($selectedFormat.width)x$($selectedFormat.height), Codec: $($selectedFormat.vcodec), Format ID: $vidID"
 }
-elseif ( $count -eq 0 ) {
-
-    # Filter the formats array based on the variables
-    $formats = $myJson.formats | Where-Object { 
-        # $_.width -eq $width -and 
-        $_.height -eq $width -and 
-        $_.vcodec -like "*$vcodec*" -and 
-        $_.protocol -like "*$protocol*" 
+elseif ($formats.Count -eq 0) {
+    Write-Output "The requested type of video is not available. You should check the other quality."
+}
+else {
+    Write-Output "Multiple video formats available. Please choose from the following:"
+    $formats | ForEach-Object {
+        Write-Output "Resolution: $($_.width)x$($_.height), Codec: $($_.vcodec), Format ID: $($_.format_id)"
     }
 
-    # Extract the format_id values and store them in an array variable
-    $formatIds = $formats | Select-Object -ExpandProperty format_id
-
-    # Check how many id $formatIds have. Only 1 is acceptable.
-    $count = $formatIds.Count
-    if ( $count -eq 1 ) {
-        $vidID = $formatIds.ToString()
-        $videoFound++
-        Write-Output "The video id is $vidID"
+    $selectedFormatIndex = Read-Host "Enter the index of the format you want to download"
+    if ($selectedFormatIndex -ge 0 -and $selectedFormatIndex -lt $formats.Count) {
+        $selectedFormat = $formats[$selectedFormatIndex]
+        $vidID = $selectedFormat.format_id
+        Write-Output "You selected Resolution: $($selectedFormat.width)x$($selectedFormat.height), Codec: $($selectedFormat.vcodec), Format ID: $vidID"
     }
-    elseif ( $count -eq 0) {
-        Write-Output "The requested type of video is not available. You should the check the other quality."
-    }
-    elseif ( $count -gt 1) {
-        Write-Output "Multiple videos available. You need to be more specific.However, one is selected for you."
-        $vidID = $formatIds[0].ToString()
-        $videoFound++
-        Write-Output "The video id is $vidID"
+    else {
+        Write-Output "Invalid format index. Downloading the first available format."
+        $selectedFormat = $formats[0]
+        $vidID = $selectedFormat.format_id
     }
 }
-elseif ( $count -gt 1) {
-    Write-Output "Multiple videos available. You need to be more specific. However, one is selected for you."
-    $vidID = $formatIds[0].ToString()
-    $videoFound++
-    Write-Output "The video id is $vidID"
-}
 
+
+
+# Sixth block, start filtering for the audio
 # Filter the formats array based on the variables
-$formats = $myJson.formats | Where-Object { 
-    $_.format_note -eq "$format_note" -and 
-    $_.acodec -like "*$acodec*" 
+$formats = Get-AudioFormats -myJson $myJson -format_note $format_note -acodec $acodec
+if ($formats.Count -eq 1) {
+    $selectedFormat = $formats[0]
+    $audID = $selectedFormat.format_id
+    Write-Output "The audio format selected: $($selectedFormat.abr), Codec: $($selectedFormat.acodec), Format ID: $audID"
+}
+elseif ($formats.Count -eq 0) {
+    Write-Output "The requested type of audio is not available. You should check the other quality."
+}
+else {
+    Write-Output "Multiple audio formats available. Please choose from the following:"
+    $formats | ForEach-Object {
+        Write-Output "Bitrate: $($_.abr), Codec: $($_.acodec), Format ID: $($_.format_id)"
+    }
+
+    $selectedFormatIndex = Read-Host "Enter the index of the format you want to download"
+    if ($selectedFormatIndex -ge 0 -and $selectedFormatIndex -lt $formats.Count) {
+        $selectedFormat = $formats[$selectedFormatIndex]
+        $audID = $selectedFormat.format_id
+        Write-Output "You selected Bitrate: $($selectedFormat.abr), Codec: $($selectedFormat.acodec), Format ID: $audID"
+    }
+    else {
+        Write-Output "Invalid format index. Downloading the first available format."
+        $selectedFormat = $formats[0]
+        $audID = $selectedFormat.format_id
+    }
 }
 
-# Extract the format_id values and store them in an array variable
-$formatIds = $formats | Select-Object -ExpandProperty format_id
-
-# Check how many id $formatIds have. Only 1 is acceptable.
-$count = $formatIds.Count
-if ( $count -eq 1 ) {
-    $audID = $formatIds.ToString()
-    $audioFound++
-    Write-Output "The audio id is $audID"
-}
-elseif ( $count -eq 0 ) {
-    Write-Output "The requested type of audio is not available. You should the check the other quality."
-}
-elseif ( $count -gt 1) {
-    Write-Output "Multiple audios available. You need to be more specific. However, one is selected for you."
-    $audID = $formatIds[0].ToString()
-    $audioFound++
-    Write-Output "The audio id is $audID"
-}
 
 
-
+# Seventh block, define the audio, video quality
 if ($videoFound -eq 1 -and $audioFound -eq 1) {
     $audioVideoQuality = "$vidID+$audID"
 }
@@ -148,8 +192,13 @@ elseif ($videoFound -eq 0 -and $audioFound -eq 0) {
 }
 
 
+
+# Eight block, execute the command to the host
 py .\yt-dlp\ "$YouTube_URL" -N 8 --windows-filenames --write-thumbnail --convert-thumbnails jpg  --embed-thumbnail --embed-metadata --embed-chapters --ffmpeg-location bin/ --write-subs --sub-format srt -f "$audioVideoQuality" 
 
+
+
+# Ninth block, remove the temporary file.
 # Remove the temporary file
 Remove-Item temp.info.json
 
