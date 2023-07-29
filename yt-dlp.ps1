@@ -7,19 +7,39 @@ function Get-VideoFormats {
         $width,
 
         [Parameter(Mandatory=$true)]
+        $height,
+
+        [Parameter(Mandatory=$true)]
         $vcodec,
 
         [Parameter(Mandatory=$true)]
         $protocol
     )
 
+    # Filter formats based on width and video codec
     $formats = $myJson.formats | Where-Object { 
         $_.width -eq $width -and 
         $_.vcodec -like "*$vcodec*" -and 
         $_.protocol -like "*$protocol*" 
     }
 
-    # Instead of returning just the format IDs, return the entire format objects
+    if ($formats.Count -eq 0) {
+        # If no formats match the width, try matching height using width as height
+        $formats = $myJson.formats | Where-Object { 
+            $_.height -eq $width -and 
+            $_.vcodec -like "*$vcodec*" -and 
+            $_.protocol -like "*$protocol*" 
+        }
+    }
+
+    if ($formats.Count -eq 0) {
+        # If no formats match the width or height, select the best available format
+        $formats = $myJson.formats | Where-Object { 
+            $_.vcodec -like "*$vcodec*" -and 
+            $_.protocol -like "*$protocol*" 
+        }
+    }
+
     return $formats
 }
 
@@ -68,7 +88,7 @@ py .\yt-dlp\ $YouTube_URL --write-info-json --skip-download --windows-filenames 
 
 # Create variables for the width and height values
 $width = 1920
-# $height = 1080
+$height = 1080
 
 # Set the video codec, avaiable codecs "vp"(vp9), "av0"(av1), "avc"
 $vcodec = "vp"
@@ -99,10 +119,10 @@ $audioFound = 0
 
 # Third block, download the subtitles
 # Third block, download the subtitles in both ASS and SRT formats
-$subtitleFormats = @("ass", "srt")
-foreach ($format in $subtitleFormats) {
-    py .\yt-dlp\ "$YouTube_URL" --ffmpeg-location bin/ --write-subs --sub-langs all --convert-subs $format --skip-download
-}
+# $subtitleFormats = @("ass", "srt")
+# foreach ($format in $subtitleFormats) {
+#     py .\yt-dlp\ "$YouTube_URL" --ffmpeg-location bin/ --write-subs --sub-langs all --convert-subs $format --skip-download
+# }
 
 
 
@@ -114,11 +134,11 @@ $myJson = Get-Content -Raw temp.info.json | ConvertFrom-Json
 
 # Fifth block, start filtering for the video
 # Filter the formats array based on the variables
-$formats = Get-VideoFormats -myJson $myJson -width $width -vcodec $vcodec -protocol $protocol
-
+$formats = Get-VideoFormats -myJson $myJson -width $width -height $height -vcodec $vcodec -protocol $protocol
 if ($formats.Count -eq 1) {
     $selectedFormat = $formats[0]
     $vidID = $selectedFormat.format_id
+    $videoFound = 1   # Update videoFound to 1 as the desired video format is found
     Write-Output "The video format selected: $($selectedFormat.width)x$($selectedFormat.height), Codec: $($selectedFormat.vcodec), Format ID: $vidID"
 }
 elseif ($formats.Count -eq 0) {
@@ -151,6 +171,7 @@ $formats = Get-AudioFormats -myJson $myJson -format_note $format_note -acodec $a
 if ($formats.Count -eq 1) {
     $selectedFormat = $formats[0]
     $audID = $selectedFormat.format_id
+    $audioFound = 1   # Update audioFound to 1 as the desired audio format is found
     Write-Output "The audio format selected: $($selectedFormat.abr), Codec: $($selectedFormat.acodec), Format ID: $audID"
 }
 elseif ($formats.Count -eq 0) {
@@ -191,7 +212,7 @@ elseif ($videoFound -eq 0 -and $audioFound -eq 0) {
     $audioVideoQuality = "bv+ba"
 }
 
-
+# echo "$audioVideoQuality"
 
 # Eight block, execute the command to the host
 py .\yt-dlp\ "$YouTube_URL" -N 8 --windows-filenames --write-thumbnail --convert-thumbnails jpg  --embed-thumbnail --embed-metadata --embed-chapters --ffmpeg-location bin/ --write-subs --sub-format srt -f "$audioVideoQuality" 
