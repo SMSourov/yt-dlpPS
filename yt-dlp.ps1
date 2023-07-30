@@ -29,13 +29,13 @@ function Get-VideoFormats {
         }
     }
 
-    if ($formats.Count -eq 0) {
-        # If no formats match the width or height, select the best available format
-        $formats = $myJson.formats | Where-Object { 
-            $_.vcodec -like "*$vcodec*" -and 
-            $_.protocol -like "*$protocol*" 
-        }
-    }
+    # if ($formats.Count -eq 0) {
+    #     # If no formats match the width or height, select the best available format
+    #     $formats = $myJson.formats | Where-Object { 
+    #         $_.vcodec -like "*$vcodec*" -and 
+    #         $_.protocol -like "*$protocol*" 
+    #     }
+    # }
 
     return $formats
 }
@@ -150,38 +150,6 @@ $availableWidths | ForEach-Object {
 
 # Write-Output "Exiting the fifth block - Step 1"
 # Write-Output "Initiating the fifth block - Step 2: List Available Height Values"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
